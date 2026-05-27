@@ -51,6 +51,21 @@ List<SettingsGroup> buildPreferencesGroups(BuildContext context) {
               .read(preferencesProvider.notifier)
               .setClipboardTopicLinkDetection(v),
         ),
+        ActionModel(
+          id: 'topicFilterKeywords',
+          title: l10n.preferences_topicFilterKeywords,
+          subtitle: l10n.preferences_topicFilterKeywordsDesc,
+          icon: Icons.filter_alt_off_rounded,
+          getDynamicSubtitle: (ref) {
+            final count = ref
+                .watch(preferencesProvider)
+                .topicFilterKeywords
+                .length;
+            if (count == 0) return l10n.preferences_topicFilterKeywordsEmpty;
+            return l10n.preferences_topicFilterKeywordsCount(count);
+          },
+          onTap: (context, ref) => _showTopicFilterKeywordsDialog(context, ref),
+        ),
         SwitchModel(
           id: 'cfClearanceRefresh',
           title: l10n.preferences_cfClearanceRefresh,
@@ -179,6 +194,94 @@ Future<void> _showAiPostReviewModelSheet(
       .setAiPostReviewModelKey(
         buildAiModelKey(selected.provider.id, selected.model.id),
       );
+}
+
+Future<void> _showTopicFilterKeywordsDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final keywords = ref.read(preferencesProvider).topicFilterKeywords;
+  final result = await showAppDialog<List<String>>(
+    context: context,
+    builder: (dialogContext) =>
+        _TopicFilterKeywordsDialog(initialKeywords: keywords),
+  );
+  if (result == null || !context.mounted) return;
+  await ref.read(preferencesProvider.notifier).setTopicFilterKeywords(result);
+}
+
+class _TopicFilterKeywordsDialog extends StatefulWidget {
+  final List<String> initialKeywords;
+
+  const _TopicFilterKeywordsDialog({required this.initialKeywords});
+
+  @override
+  State<_TopicFilterKeywordsDialog> createState() =>
+      _TopicFilterKeywordsDialogState();
+}
+
+class _TopicFilterKeywordsDialogState
+    extends State<_TopicFilterKeywordsDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.initialKeywords.join('\n'),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return AlertDialog(
+      title: Text(l10n.preferences_topicFilterKeywords),
+      content: SizedBox(
+        width: 420,
+        child: TextField(
+          controller: _controller,
+          decoration: InputDecoration(
+            hintText: l10n.preferences_topicFilterKeywordsHint,
+            helperText: l10n.preferences_topicFilterKeywordsHelper,
+            border: const OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.multiline,
+          minLines: 5,
+          maxLines: 10,
+          autofocus: true,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.common_cancel),
+        ),
+        TextButton(
+          onPressed: () => _controller.clear(),
+          child: Text(l10n.common_clear),
+        ),
+        FilledButton(
+          onPressed: () {
+            final keywords = _controller.text
+                .split('\n')
+                .map((keyword) => keyword.trim())
+                .where((keyword) => keyword.isNotEmpty)
+                .toList();
+            Navigator.pop(context, keywords);
+          },
+          child: Text(l10n.common_confirm),
+        ),
+      ],
+    );
+  }
 }
 
 void _showStickerBaseUrlDialog(BuildContext context, WidgetRef ref) {

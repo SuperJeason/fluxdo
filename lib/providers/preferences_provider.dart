@@ -59,6 +59,9 @@ class AppPreferences {
   /// 自动识别剪贴板中的 Linux.do 话题链接
   final bool clipboardTopicLinkDetection;
 
+  /// 话题关键词过滤列表
+  final List<String> topicFilterKeywords;
+
   /// 崩溃日志上报（仅 Android）
   final bool crashlytics;
 
@@ -132,6 +135,7 @@ class AppPreferences {
     required this.shareImageThemeIndex,
     required this.autoFillLogin,
     required this.clipboardTopicLinkDetection,
+    required this.topicFilterKeywords,
     required this.crashlytics,
     required this.androidNativeCdp,
     required this.portraitLock,
@@ -165,6 +169,7 @@ class AppPreferences {
     int? shareImageThemeIndex,
     bool? autoFillLogin,
     bool? clipboardTopicLinkDetection,
+    List<String>? topicFilterKeywords,
     bool? crashlytics,
     bool? androidNativeCdp,
     bool? portraitLock,
@@ -199,6 +204,7 @@ class AppPreferences {
       autoFillLogin: autoFillLogin ?? this.autoFillLogin,
       clipboardTopicLinkDetection:
           clipboardTopicLinkDetection ?? this.clipboardTopicLinkDetection,
+      topicFilterKeywords: topicFilterKeywords ?? this.topicFilterKeywords,
       crashlytics: crashlytics ?? this.crashlytics,
       androidNativeCdp: androidNativeCdp ?? this.androidNativeCdp,
       portraitLock: portraitLock ?? this.portraitLock,
@@ -240,6 +246,7 @@ class PreferencesNotifier extends StateNotifier<AppPreferences> {
   static const String _autoFillLoginKey = 'pref_auto_fill_login';
   static const String _clipboardTopicLinkDetectionKey =
       'pref_clipboard_topic_link_detection';
+  static const String _topicFilterKeywordsKey = 'pref_topic_filter_keywords';
   static const String _crashlyticsKey = 'pref_crashlytics';
   static const String _androidNativeCdpKey = AndroidCdpFeature.prefKey;
   static const String _portraitLockKey = 'pref_portrait_lock';
@@ -283,6 +290,8 @@ class PreferencesNotifier extends StateNotifier<AppPreferences> {
           autoFillLogin: _prefs.getBool(_autoFillLoginKey) ?? true,
           clipboardTopicLinkDetection:
               _prefs.getBool(_clipboardTopicLinkDetectionKey) ?? false,
+          topicFilterKeywords:
+              _prefs.getStringList(_topicFilterKeywordsKey) ?? const [],
           crashlytics: _prefs.getBool(_crashlyticsKey) ?? true,
           androidNativeCdp: _prefs.getBool(_androidNativeCdpKey) ?? false,
           portraitLock: _prefs.getBool(_portraitLockKey) ?? false,
@@ -369,6 +378,16 @@ class PreferencesNotifier extends StateNotifier<AppPreferences> {
   Future<void> setClipboardTopicLinkDetection(bool enabled) async {
     state = state.copyWith(clipboardTopicLinkDetection: enabled);
     await _prefs.setBool(_clipboardTopicLinkDetectionKey, enabled);
+  }
+
+  Future<void> setTopicFilterKeywords(List<String> keywords) async {
+    final normalized = keywords
+        .map((keyword) => keyword.trim())
+        .where((keyword) => keyword.isNotEmpty)
+        .toSet()
+        .toList();
+    state = state.copyWith(topicFilterKeywords: normalized);
+    await _prefs.setStringList(_topicFilterKeywordsKey, normalized);
   }
 
   Future<void> setCrashlytics(bool enabled) async {

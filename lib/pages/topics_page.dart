@@ -1296,6 +1296,22 @@ class _TopicListState extends ConsumerState<_TopicList>
     setState(() => _keyboardFocusIndex = index);
   }
 
+  List<Topic> _filterTopicsByKeywords(
+    List<Topic> topics,
+    List<String> keywords,
+  ) {
+    final normalized = keywords
+        .map((keyword) => keyword.trim().toLowerCase())
+        .where((keyword) => keyword.isNotEmpty)
+        .toList();
+    if (normalized.isEmpty) return topics;
+
+    return topics.where((topic) {
+      final title = topic.title.toLowerCase();
+      return !normalized.any(title.contains);
+    }).toList();
+  }
+
   void _openTopic(Topic topic) {
     final canShowDetailPane = MasterDetailLayout.canShowBothPanesFor(context);
 
@@ -1366,6 +1382,12 @@ class _TopicListState extends ConsumerState<_TopicList>
           : (_cachedTopicsAsync ?? const AsyncValue.loading());
     }
 
+    final keywords = ref.watch(
+      preferencesProvider.select((p) => p.topicFilterKeywords),
+    );
+    final visibleTopicsAsync = topicsAsync.whenData(
+      (topics) => _filterTopicsByKeywords(topics, keywords),
+    );
     final selectedTopicId = ref.watch(selectedTopicProvider).topicId;
 
     // 桌面端：注册 J/K/Enter 导航到主面板快捷键
@@ -1373,10 +1395,11 @@ class _TopicListState extends ConsumerState<_TopicList>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _listShortcutBinding.register(context, {
-          ShortcutAction.nextItem: () => _moveKeyboardFocus(1, topicsAsync),
+          ShortcutAction.nextItem: () =>
+              _moveKeyboardFocus(1, visibleTopicsAsync),
           ShortcutAction.previousItem: () =>
-              _moveKeyboardFocus(-1, topicsAsync),
-          ShortcutAction.openItem: () => _openFocusedTopic(topicsAsync),
+              _moveKeyboardFocus(-1, visibleTopicsAsync),
+          ShortcutAction.openItem: () => _openFocusedTopic(visibleTopicsAsync),
         });
       });
     } else if (PlatformUtils.isDesktop) {
@@ -1386,7 +1409,7 @@ class _TopicListState extends ConsumerState<_TopicList>
       });
     }
 
-    return topicsAsync.when(
+    return visibleTopicsAsync.when(
       data: (topics) {
         if (topics.isEmpty) {
           return RefreshIndicator(
