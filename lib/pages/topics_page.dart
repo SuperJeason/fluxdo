@@ -1525,15 +1525,15 @@ class _TopicListState extends ConsumerState<_TopicList>
                 padding: const EdgeInsets.only(top: 8, bottom: 12),
                 itemCount: topics.length + headerOffset + 1,
                 itemBuilder: (context, index) {
-                  if (hintOffset > 0 && index == 0) {
-                    return KeywordFilterHintBar(hiddenCount: hiddenCount);
-                  }
-                  if (hasNewTopics && index == hintOffset) {
+                  if (hasNewTopics && index == 0) {
                     return _buildNewTopicIndicator(
                       context,
                       newTopicCount,
                       providerKey,
                     );
+                  }
+                  if (hintOffset > 0 && index == newTopicOffset) {
+                    return KeywordFilterHintBar(hiddenCount: hiddenCount);
                   }
 
                   final topicIndex = index - headerOffset;
