@@ -46,7 +46,9 @@
     }
   },
   "preferences_topicFilterKeywordsHint": "每行輸入一個關鍵字",
-  "preferences_topicFilterKeywordsHelper": "只比對話題標題，不區分大小寫",
+  "preferences_topicFilterKeywordsHelper": "只比對話題標題，子字串比對，不區分大小寫",
+  "preferences_topicFilterWholeWord": "完整詞比對",
+  "preferences_topicFilterWholeWordDesc": "開啟後英文關鍵字不再比對子字串，如 ai 不會命中 Main thread；中文關鍵字無影響",
   "preferences_autoPanguSpacing": "自動混排最佳化",
   "preferences_autoPanguSpacingDesc": "輸入時自動插入中英文混排空格",
   "preferences_aiPostReview": "發文前 AI 審核",

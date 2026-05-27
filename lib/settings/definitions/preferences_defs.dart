@@ -61,10 +61,10 @@ List<SettingsGroup> buildPreferencesGroups(BuildContext context) {
                 .watch(preferencesProvider)
                 .topicFilterKeywords
                 .length;
-            if (count == 0) return l10n.preferences_topicFilterKeywordsEmpty;
+            if (count == 0) return null;
             return l10n.preferences_topicFilterKeywordsCount(count);
           },
-          onTap: (context, ref) => _showTopicFilterKeywordsDialog(context, ref),
+          onTap: (context, ref) => showTopicFilterKeywordsDialog(context, ref),
         ),
         SwitchModel(
           id: 'cfClearanceRefresh',
@@ -196,24 +196,35 @@ Future<void> _showAiPostReviewModelSheet(
       );
 }
 
-Future<void> _showTopicFilterKeywordsDialog(
+typedef _TopicFilterDialogResult = ({List<String> keywords, bool wholeWord});
+
+/// 打开「标题关键词过滤」编辑弹窗（公共入口，hint bar 与设置项均复用）。
+Future<void> showTopicFilterKeywordsDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
-  final keywords = ref.read(preferencesProvider).topicFilterKeywords;
-  final result = await showAppDialog<List<String>>(
+  final prefs = ref.read(preferencesProvider);
+  final result = await showAppDialog<_TopicFilterDialogResult>(
     context: context,
-    builder: (dialogContext) =>
-        _TopicFilterKeywordsDialog(initialKeywords: keywords),
+    builder: (dialogContext) => _TopicFilterKeywordsDialog(
+      initialKeywords: prefs.topicFilterKeywords,
+      initialWholeWord: prefs.topicFilterWholeWord,
+    ),
   );
   if (result == null || !context.mounted) return;
-  await ref.read(preferencesProvider.notifier).setTopicFilterKeywords(result);
+  final notifier = ref.read(preferencesProvider.notifier);
+  await notifier.setTopicFilterKeywords(result.keywords);
+  await notifier.setTopicFilterWholeWord(result.wholeWord);
 }
 
 class _TopicFilterKeywordsDialog extends StatefulWidget {
   final List<String> initialKeywords;
+  final bool initialWholeWord;
 
-  const _TopicFilterKeywordsDialog({required this.initialKeywords});
+  const _TopicFilterKeywordsDialog({
+    required this.initialKeywords,
+    required this.initialWholeWord,
+  });
 
   @override
   State<_TopicFilterKeywordsDialog> createState() =>
@@ -223,6 +234,7 @@ class _TopicFilterKeywordsDialog extends StatefulWidget {
 class _TopicFilterKeywordsDialogState
     extends State<_TopicFilterKeywordsDialog> {
   late final TextEditingController _controller;
+  late bool _wholeWord;
 
   @override
   void initState() {
@@ -230,6 +242,7 @@ class _TopicFilterKeywordsDialogState
     _controller = TextEditingController(
       text: widget.initialKeywords.join('\n'),
     );
+    _wholeWord = widget.initialWholeWord;
   }
 
   @override
@@ -246,27 +259,47 @@ class _TopicFilterKeywordsDialogState
       title: Text(l10n.preferences_topicFilterKeywords),
       content: SizedBox(
         width: 420,
-        child: TextField(
-          controller: _controller,
-          decoration: InputDecoration(
-            hintText: l10n.preferences_topicFilterKeywordsHint,
-            helperText: l10n.preferences_topicFilterKeywordsHelper,
-            border: const OutlineInputBorder(),
-          ),
-          keyboardType: TextInputType.multiline,
-          minLines: 5,
-          maxLines: 10,
-          autofocus: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                icon: const Icon(Icons.clear_all_rounded, size: 18),
+                label: Text(l10n.common_clear),
+                onPressed: () => _controller.clear(),
+              ),
+            ),
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: l10n.preferences_topicFilterKeywordsHint,
+                helperText: l10n.preferences_topicFilterKeywordsHelper,
+                helperMaxLines: 2,
+                border: const OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.multiline,
+              minLines: 5,
+              maxLines: 10,
+              autofocus: true,
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(l10n.preferences_topicFilterWholeWord),
+              subtitle: Text(l10n.preferences_topicFilterWholeWordDesc),
+              value: _wholeWord,
+              onChanged: (v) => setState(() => _wholeWord = v),
+            ),
+          ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.common_cancel),
-        ),
-        TextButton(
-          onPressed: () => _controller.clear(),
-          child: Text(l10n.common_clear),
         ),
         FilledButton(
           onPressed: () {
@@ -275,7 +308,7 @@ class _TopicFilterKeywordsDialogState
                 .map((keyword) => keyword.trim())
                 .where((keyword) => keyword.isNotEmpty)
                 .toList();
-            Navigator.pop(context, keywords);
+            Navigator.pop(context, (keywords: keywords, wholeWord: _wholeWord));
           },
           child: Text(l10n.common_confirm),
         ),

@@ -46,7 +46,9 @@
     }
   },
   "preferences_topicFilterKeywordsHint": "Enter one keyword per line",
-  "preferences_topicFilterKeywordsHelper": "Only topic titles are matched, case-insensitively",
+  "preferences_topicFilterKeywordsHelper": "Only topic titles are matched as substrings, case-insensitively",
+  "preferences_topicFilterWholeWord": "Whole-word match",
+  "preferences_topicFilterWholeWordDesc": "When enabled, English keywords no longer match as substrings (e.g. \"ai\" will not hit \"Main thread\"). CJK keywords are unaffected.",
   "preferences_autoPanguSpacing": "Auto CJK spacing",
   "preferences_autoPanguSpacingDesc": "Auto-insert spaces between CJK and Latin text",
   "preferences_aiPostReview": "AI review before posting",
